@@ -1,0 +1,9 @@
+{
+	"name": "primaladf-Dev",
+	"location": "eastus",
+	"identity": {
+		"type": "SystemAssigned",
+		"principalId": "d807a592-ab46-4954-8166-41ce00c70c5c",
+		"tenantId": "47a3933c-8b51-41be-90fd-d3cf825242d3"
+	}
+}
