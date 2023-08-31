@@ -1,1 +1,153 @@
+name: ADF-Deploy-$(Date:yyyyMMdd)$(Rev:.r)
 
+ 
+
+variables:
+
+- name: ROOT_ADF_FOLDER_FILES
+
+  value: 'ADF'
+
+- name: ADF_REPO_NAME
+
+  value: repo2adf
+
+- name: ADF_BASE_BRANCH_NAME
+
+  value: dev
+
+ 
+
+trigger:
+
+  batch: true
+
+  branches:
+
+    include:
+
+    - dev
+
+  paths:
+
+    include:
+
+    - ADF/
+
+   
+
+pr:
+
+  paths:
+
+    include:
+
+    - ADF/
+
+ 
+
+pool:
+
+  name: Hosted Windows 2019 with VS2019
+
+  demands: azureps
+
+ 
+
+stages:
+
+  - stage: Build
+
+    jobs:
+
+      - job: build
+
+        displayName: Build ADF source code
+
+        steps:
+
+        - checkout: self
+
+        - task: BuildADFTask@1
+
+          displayName: 'Validate ADF source code'
+
+          inputs:
+
+            DataFactoryCodePath: '$(System.DefaultWorkingDirectory)\$(ROOT_ADF_FOLDER_FILES)'
+
+            Action: 'Build'
+
+ 
+
+  - stage: DevDeploy
+
+    condition: and(succeeded(), eq(variables['Build.SourceBranchName'], 'dev'))
+
+    displayName: Dev Deploy stage
+
+    dependsOn: Build
+
+    jobs:
+
+      - deployment: 'DeployToDev'
+
+        environment: 'env_adf_dev'
+
+        variables:
+
+          - group: vg-adf-integration-dev
+
+        displayName: Deploy to Dev
+
+        strategy:
+
+          runOnce:
+
+            deploy:
+
+              steps:
+
+              - checkout: self
+
+              - task: PublishADFTask@1
+
+                displayName: 'Deploy ADF Dev environment'
+
+                inputs:
+
+                  azureSubscription: 'se-adf-integration-adf-dev'
+
+                  ResourceGroupName: '$(resource-group-name)'
+
+                  DataFactoryName: '$(adf-name)'
+
+                  DataFactoryCodePath: '$(System.DefaultWorkingDirectory)\$(ROOT_ADF_FOLDER_FILES)'
+
+                  Location: '$(location)'
+
+                  DeleteNotInSource: true
+
+                  CreateNewInstance: false
+
+                  PublishMethod: 'AzResource'
+
+              - task: AzurePowerShell@4
+
+                displayName: 'Set ADF Git connection'
+
+                inputs:
+
+                  azureSubscription: 'se-adf-integration-adf-dev'
+
+                  ScriptType: InlineScript
+
+                  Inline: |
+
+                    Install-Module -Name Az.DataFactory -Scope CurrentUser -Force
+
+                    Import-Module -Name Az.DataFactory
+
+                    Get-AzDataFactoryV2 -ResourceGroupName "$(resource-group-name)" -Name "$(adf-name)" | Set-AzDataFactoryV2 -HostName https://github.com -AccountName "primal007" -RepositoryName "$(ADF_REPO_NAME)" -CollaborationBranch "$(ADF_BASE_BRANCH_NAME)" -RootFolder "/$(ROOT_ADF_FOLDER_FILES)" -Force
+
+                  azurePowerShellVersion: LatestVersion
