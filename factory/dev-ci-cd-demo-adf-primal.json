@@ -1,0 +1,9 @@
+{
+	"name": "dev-ci-cd-demo-adf-primal",
+	"location": "southindia",
+	"identity": {
+		"type": "SystemAssigned",
+		"principalId": "0762927f-ac68-4abb-8ec4-1f6712b743f8",
+		"tenantId": "47a3933c-8b51-41be-90fd-d3cf825242d3"
+	}
+}
